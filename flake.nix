@@ -1,7 +1,7 @@
 {
   description = "An Implementation of the Xv6 Kernel in Zig.";
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     systems.url = "github:nix-systems/default";
   };
 
@@ -24,6 +24,7 @@
           nasm
           qemu
           asm-lsp
+          grub2
         ];
       };
     });
