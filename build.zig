@@ -15,8 +15,6 @@ pub fn build(b: *std.Build) void {
 
     enabled_features.addFeature(@intFromEnum(Target.x86.Feature.soft_float));
 
-    b.enable_qemu = true;
-
     const target_query = Target.Query{
         .cpu_arch = Target.Cpu.Arch.x86,
         .os_tag = Target.Os.Tag.freestanding,
@@ -38,13 +36,12 @@ pub fn build(b: *std.Build) void {
 
     const nasm_files = [_][]const u8{"src/kstart.nasm"};
     for (nasm_files) |file| {
-        std.log.debug("{any}", .{.prefix});
         const file_name = std.fs.path.basename(file);
         const file_stem = std.fs.path.stem(file_name);
         const obj_file_name = b.fmt("{s}.o", .{file_stem});
-        const nasm = b.addSystemCommand(&[_][]const u8{"nasm"});
+        const nasm = b.addSystemCommand(&.{"nasm"});
         nasm.addFileArg(b.path(file));
-        nasm.addArgs(&[_][]const u8{ "-f", "elf32", "-o" });
+        nasm.addArgs(&.{ "-f", "elf32", "-o" });
         const obj_file_path = nasm.addOutputFileArg(obj_file_name);
 
         kernel.addObjectFile(obj_file_path);
@@ -53,4 +50,14 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(kernel);
     const kernel_step = b.step("kernel", "Build the kernel");
     kernel_step.dependOn(&kernel.step);
+
+    const run_step = b.step("run", "Boot into the kernel with qemu");
+    const run_cmd = b.addSystemCommand(&.{ "qemu-system-i386", "-kernel" });
+    run_cmd.step.dependOn(kernel_step);
+    run_cmd.addFileArg(kernel.getEmittedBin());
+    // Pass `args` in `zig build run -- <args>` to qemu
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
+    run_step.dependOn(&run_cmd.step);
 }
